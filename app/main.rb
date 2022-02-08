@@ -9,6 +9,7 @@ BOUNCINESS = 0.9
 RACCOON_SIZE = 10
 RACCOON_WIDTH = 19
 RACCOON_HEIGHT = 16
+FONT = '/fonts/shpinscher.ttf'
 
 class State
   INTRO = 0
@@ -38,6 +39,7 @@ def tick(args)
     game
   end
 end
+
 def draw_raccoon(x, y, flip, angle)
   @args.outputs.sprites << {
     x: x,
@@ -51,6 +53,7 @@ def draw_raccoon(x, y, flip, angle)
     angle_anchor_y: 0.5
   }
 end
+
 def intro
   sin = Math.sin(@args.state.tick_count / 60)
   sin = sin.clamp(0,1).ceil
@@ -66,6 +69,7 @@ end
 def countdown
   @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/background.png']
   @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/front.png']
+  @args.outputs.sprites << [0, 0, WIDTH, HEIGHT, '/sprites/blank.png', 0, 127]
 
   @time_countdown ||= 3
 
@@ -77,9 +81,9 @@ def countdown
   end
 
   @args.outputs.labels << if @time_countdown >= 1
-                            [640, 360, "COUNTDOWN: #{@time_countdown.round}s", 30, 1, 0, 0, 255, 255]
+                            [640, 450, "COUNTDOWN: #{@time_countdown.round}s", 60, 1, 0, 0, 255, 255, FONT]
                           else
-                            [640, 360, 'Click the Raccoon', 30, 1, 0, 0, 255, 255]
+                            [640, 450, 'Click the Raccoon', 60, 1, 0, 0, 255, 255, FONT]
                           end
 end
 
@@ -100,6 +104,8 @@ def game
   @time ||= 5
 
   @game_over ||= false
+  
+  @flip ||= false
 
   if @x_position.negative?
     @x_position = 0
@@ -115,7 +121,13 @@ def game
     @y_position = 0
     @y_speed = -@y_speed * BOUNCINESS
   end
-
+  
+  if @x_speed.negative?
+    @flip = true
+  else
+    @flip = false
+  end
+  
   @size ||= H_CIRCLE
 
   mouse_x = @args.inputs.mouse.x
@@ -128,10 +140,22 @@ def game
     @points += 1
   end
 
-  @args.outputs.sprites << [@x_position, @y_position, @size, @size, '/sprites/raccoon.png']
+  @args.outputs.sprites << {
+    x: @x_position,
+    y: @y_position,
+    w: @size,
+    h: @size,
+    path: '/sprites/raccoon.png',
+    flip_horizontally: @flip
+  }
+
   @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/front.png']
 
-  @args.outputs.labels << [0, HEIGHT, "Points: #{@points}", 10, 0, 150, 0, 0, 255]
+  unless @game_over
+    @args.outputs.sprites << [0, HEIGHT - 60, WIDTH, 60, '/sprites/blank.png', 0, 127]
+  end
+
+  @args.outputs.labels << [0, HEIGHT, "Points: #{@points}", 20, 0, 150, 0, 0, 255, FONT]
 
   @time -= 1 / 60
 
@@ -140,7 +164,10 @@ def game
     @game_over = true
   end
 
-  @args.outputs.labels << [WIDTH, HEIGHT, "Time: #{@time.round}s", 10, 2, 0, 150, 0, 255]
+  @args.outputs.labels << [WIDTH, HEIGHT, "Time: #{@time.round}s", 20, 2, 0, 150, 0, 255, FONT]
 
-  @args.outputs.labels << [WIDTH / 2, HEIGHT / 2, "YOU GOT #{@points} POINTS!", 30, 1, 0, 0, 150, 255] if @game_over
+  if @game_over
+    @args.outputs.sprites << [0, 0, WIDTH, HEIGHT, '/sprites/blank.png', 0, 127]
+    @args.outputs.labels << [WIDTH / 2, 450, "YOU GOT #{@points} POINTS!", 60, 1, 0, 0, 150, 255, FONT]
+  end
 end
