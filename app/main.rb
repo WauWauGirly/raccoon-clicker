@@ -1,9 +1,14 @@
+# frozen_string_literal: true
+
 WIDTH = 1280
 HEIGHT = 720
 H_CIRCLE = 180
 RAD = H_CIRCLE / 2
 GRAVITY = -9.81
 BOUNCINESS = 0.9
+RACCOON_SIZE = 10
+RACCOON_WIDTH = 19
+RACCOON_HEIGHT = 16
 
 class State
   INTRO = 0
@@ -12,35 +17,50 @@ class State
 end
 
 def inside_sprite(mouse_x, mouse_y, size, x_position, y_position)
-
   inside_x = mouse_x > x_position && mouse_x < x_position + size
   inside_y = mouse_y > y_position && mouse_y < y_position + size
 
   inside_x && inside_y
 end
 
-def tick args
+def tick(args)
   @args = args
   @state ||= State::INTRO
 
-  case (@state)
+  case @state
   when State::INTRO
     intro
-    if @args.inputs.keyboard.key_down.space
-      @state = State::COUNTDOWN
-    end
+    @state = State::COUNTDOWN if @args.inputs.keyboard.key_down.space
   when State::COUNTDOWN
     countdown
-    if @args.inputs.keyboard.key_down.space
-      @state = State::GAME
-    end
+    @state = State::GAME if @args.inputs.keyboard.key_down.space
   when State::GAME
     game
   end
 end
-
+def draw_raccoon(x, y, flip, angle)
+  @args.outputs.sprites << {
+    x: x,
+    y: y,
+    w: 19 * RACCOON_SIZE,
+    h: 16 * RACCOON_SIZE,
+    path: '/sprites/raccoon.png',
+    flip_horizontally: flip,
+    angle: angle,
+    angle_anchor_x: 0.5,
+    angle_anchor_y: 0.5
+  }
+end
 def intro
-  @args.outputs.sprites << [0,0, 1280, 720, '/sprites/start_screen.png']
+  sin = Math.sin(@args.state.tick_count / 60)
+  sin = sin.clamp(0,1).ceil
+  sin_2 = Math.sin(@args.state.tick_count / 2)
+  sin *= sin_2
+  @args.outputs.sprites << [0, 0, WIDTH, HEIGHT, '/sprites/start_screen.png']
+  draw_raccoon(0, 0, false, sin)
+  draw_raccoon(0, HEIGHT - RACCOON_HEIGHT * RACCOON_SIZE, false, sin)
+  draw_raccoon(WIDTH - RACCOON_WIDTH * RACCOON_SIZE, HEIGHT - RACCOON_HEIGHT * RACCOON_SIZE, true, sin)
+  draw_raccoon(WIDTH - RACCOON_WIDTH * RACCOON_SIZE, 0, true, sin)
 end
 
 def countdown
@@ -56,25 +76,24 @@ def countdown
     @state = State::GAME
   end
 
-  if @time_countdown >= 1
-    @args.outputs.labels << [640, 360, "COUNTDOWN: #{@time_countdown.round}s", 30, 1, 0, 0, 255, 255]
-  else
-    @args.outputs.labels << [640, 360, 'Click the Raccoon', 30, 1, 0, 0, 255, 255]
-  end
-  
+  @args.outputs.labels << if @time_countdown >= 1
+                            [640, 360, "COUNTDOWN: #{@time_countdown.round}s", 30, 1, 0, 0, 255, 255]
+                          else
+                            [640, 360, 'Click the Raccoon', 30, 1, 0, 0, 255, 255]
+                          end
 end
 
 def game
-  @args.outputs.sprites << [0,0, 1280, 720, '/sprites/background.png']
+  @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/background.png']
 
   @x_speed ||= 5
   @x_position ||= WIDTH - 1250
-  @x_position = @x_position + @x_speed
+  @x_position += @x_speed
 
   @y_speed ||= 0
-  @y_speed = @y_speed + GRAVITY / 60
+  @y_speed += GRAVITY / 60
   @y_position ||= HEIGHT - 90
-  @y_position = @y_position + @y_speed
+  @y_position += @y_speed
 
   @points ||= 0
 
@@ -82,11 +101,7 @@ def game
 
   @game_over ||= false
 
-  #if @y_position <= RAD
-  #  @y_position = RAD
-  #end
-
-  if @x_position < 0
+  if @x_position.negative?
     @x_position = 0
     @x_speed = -@x_speed * BOUNCINESS
   end
@@ -96,7 +111,7 @@ def game
     @x_speed = -@x_speed * BOUNCINESS
   end
 
-  if @y_position < 0
+  if @y_position.negative?
     @y_position = 0
     @y_speed = -@y_speed * BOUNCINESS
   end
@@ -114,20 +129,18 @@ def game
   end
 
   @args.outputs.sprites << [@x_position, @y_position, @size, @size, '/sprites/raccoon.png']
-  @args.outputs.sprites << [0,0, 1280, 720, '/sprites/front.png']
+  @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/front.png']
 
   @args.outputs.labels << [0, HEIGHT, "Points: #{@points}", 10, 0, 150, 0, 0, 255]
 
   @time -= 1 / 60
 
-  if @time < 0
+  if @time.negative?
     @time = 0
     @game_over = true
   end
 
   @args.outputs.labels << [WIDTH, HEIGHT, "Time: #{@time.round}s", 10, 2, 0, 150, 0, 255]
 
-  if @game_over
-    @args.outputs.labels << [WIDTH / 2, HEIGHT / 2, "YOU GOT #{@points} POINTS!", 30, 1, 0, 0, 150, 255]
-  end
+  @args.outputs.labels << [WIDTH / 2, HEIGHT / 2, "YOU GOT #{@points} POINTS!", 30, 1, 0, 0, 150, 255] if @game_over
 end
