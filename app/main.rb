@@ -43,7 +43,7 @@ def tick(args)
   case @state
   when State::INTRO
     intro
-    @state = State::COUNTDOWN if @args.inputs.keyboard.key_down.space
+    @state = State::COUNTDOWN if @args.inputs.keyboard.key_down.space || @args.inputs.mouse.click
     @state = State::CREDITS if @args.inputs.keyboard.key_down.c
   when State::COUNTDOWN
     countdown
@@ -129,9 +129,13 @@ def init_animals
 
   @time = TIME
 
+  @tap_wait_time = 3
+
   @game_over = false
 
   @size = H_CIRCLE
+
+  @time_countdown = 3
 
   i = 0
 
@@ -190,7 +194,7 @@ def draw_animal(i)
 
   if @args.inputs.mouse.click && inside && !@game_over
     # @args.outputs.sounds << '/sounds/click.wav'
-    @size /= 1.1
+    @size /= 1.03
     if @animals[i].enemy == false
       @raccoon_clicked = true
     else
@@ -242,9 +246,10 @@ def game
 
   @time -= 1 / 60
 
-  if @time.negative?
+  if @time <= 0
     @time = 0
     @game_over = true
+    @tap_wait_time -= 1 / 60
   end
 
   @args.outputs.labels << [WIDTH, HEIGHT, "Time: #{@time.round}s", 20, 2, 0, 150, 0, 255, FONT]
@@ -252,7 +257,7 @@ def game
   if @game_over
     @args.outputs.sprites << [0, 0, WIDTH, HEIGHT, '/sprites/blank.png', 0, 127]
     @args.outputs.labels << [WIDTH / 2, 450, "YOU GOT #{@points} POINTS!", 60, 1, 0, 0, 150, 255, FONT]
-    @state = State::INTRO if @args.inputs.keyboard.key_down.space
+    @state = State::INTRO if @args.inputs.keyboard.key_down.space || (@args.inputs.mouse.click && @tap_wait_time < 0)
   end
 
   @raccoon_clicked = false
