@@ -43,7 +43,7 @@ def tick(args)
   case @state
   when State::INTRO
     intro
-    @state = State::COUNTDOWN if @args.inputs.keyboard.key_down.space || @args.inputs.mouse.click
+    @state = State::COUNTDOWN if @args.inputs.keyboard.key_down.space || has_input
     @state = State::CREDITS if @args.inputs.keyboard.key_down.c
   when State::COUNTDOWN
     countdown
@@ -74,7 +74,7 @@ def credits
     i += 1
   end
 
-  if @args.inputs.mouse.click || @args.inputs.keyboard.key_down.space || @args.inputs.keyboard.key_down.escape
+  if has_input || @args.inputs.keyboard.key_down.space || @args.inputs.keyboard.key_down.escape
     @state = State::INTRO
   end
 end
@@ -190,9 +190,15 @@ def draw_animal(i)
   mouse_x = @args.inputs.mouse.x
   mouse_y = @args.inputs.mouse.y
 
+  touch = get_touch
+  if touch.t
+    mouse_x = touch.x
+    mouse_y = touch.y
+  end
+
   inside = inside_sprite(mouse_x, mouse_y, @size, @animals[i].x_position, @animals[i].y_position)
 
-  if @args.inputs.mouse.click && inside && !@game_over
+  if has_input && inside && !@game_over
     # @args.outputs.sounds << '/sounds/click.wav'
     @size /= 1.03
     if @animals[i].enemy == false
@@ -214,6 +220,26 @@ def draw_animal(i)
     source_h: 16,
     flip_horizontally: @animals[i].flip
   }
+end
+
+def get_touch
+  output = {x: -1, y: -1, t: false}
+  if !@args.inputs.finger_one.nil?
+    output[:x] = @args.inputs.finger_one.x
+    output[:y] = @args.inputs.finger_one.y
+    output[:t] = true
+  end
+  if !@args.inputs.finger_two.nil?
+    output[:x] = @args.inputs.finger_two.x
+    output[:y] = @args.inputs.finger_two.y
+    output[:t] = true
+  end
+  output
+end
+
+def has_input
+  touch = get_touch
+  @args.inputs.mouse.click|| touch.t
 end
 
 def game
@@ -257,7 +283,7 @@ def game
   if @game_over
     @args.outputs.sprites << [0, 0, WIDTH, HEIGHT, '/sprites/blank.png', 0, 127]
     @args.outputs.labels << [WIDTH / 2, 450, "YOU GOT #{@points} POINTS!", 60, 1, 0, 0, 150, 255, FONT]
-    @state = State::INTRO if @args.inputs.keyboard.key_down.space || (@args.inputs.mouse.click && @tap_wait_time < 0)
+    @state = State::INTRO if @args.inputs.keyboard.key_down.space || (has_input && @tap_wait_time < 0)
   end
 
   @raccoon_clicked = false
