@@ -1,7 +1,7 @@
 var GDragonRubyGameId = 'raccoonclicker';
 var GDragonRubyGameTitle = 'Raccoon Clicker';
 var GDragonRubyDevTitle = 'WauWauGirly';
-var GDragonRubyGameVersion = '0.2';
+var GDragonRubyGameVersion = '0.3';
 var GDragonRubyIcon = '/metadata/icon.png';
 
 function syncDataFiles(dbname, baseurl)

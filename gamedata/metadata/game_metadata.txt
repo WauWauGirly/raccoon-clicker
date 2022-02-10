@@ -2,7 +2,7 @@ devid=wauwaugirly
 devtitle=WauWauGirly
 gameid=raccoonclicker
 gametitle=Raccoon Clicker
-version=0.2
+version=0.3
 icon=metadata/icon.png
 
 # Uncomment the entry below to bytecode compile your Ruby code (Pro License Only)
