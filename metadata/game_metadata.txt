@@ -1,7 +1,7 @@
-devid=myname
-devtitle=My Name
-gameid=mygame
-gametitle=My Game
+devid=wauwaugirly
+devtitle=WauWauGirly
+gameid=raccoonclicker
+gametitle=Raccoon Clicker
 version=0.1
 icon=metadata/icon.png
 
