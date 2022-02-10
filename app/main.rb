@@ -5,12 +5,13 @@ HEIGHT = 720
 H_CIRCLE = 180
 RAD = H_CIRCLE / 2
 GRAVITY = -9.81
-BOUNCINESS = 0.9
+BOUNCINESS = 0.95
 RACCOON_SIZE = 10
 RACCOON_WIDTH = 19
 RACCOON_HEIGHT = 16
 FONT = '/fonts/shpinscher.ttf'
 SNAKES = 10
+TIME = 15
 
 class State
   INTRO = 0
@@ -35,7 +36,6 @@ def tick(args)
     @state = State::COUNTDOWN if @args.inputs.keyboard.key_down.space
   when State::COUNTDOWN
     countdown
-    @state = State::GAME if @args.inputs.keyboard.key_down.space
   when State::GAME
     game
   end
@@ -57,7 +57,7 @@ end
 
 def intro
   sin = Math.sin(@args.state.tick_count / 60)
-  sin = sin.clamp(0,1).ceil
+  sin = sin.clamp(0, 1).ceil
   sin_2 = Math.sin(@args.state.tick_count / 2)
   sin *= sin_2
   @args.outputs.sprites << [0, 0, WIDTH, HEIGHT, '/sprites/start_screen.png']
@@ -79,6 +79,7 @@ def countdown
   if @time_countdown < -2
     @time_countdown = -2
     @state = State::GAME
+    init_animals
   end
 
   @args.outputs.labels << if @time_countdown >= 1
@@ -88,89 +89,104 @@ def countdown
                           end
 end
 
-def game
-  @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/background.png']
+def init_animals
+  @animals = []
 
-  @animal ||= {}
-  @animal[:x_speed] ||= 5
+  @points = 0
 
-  @x_speed ||= 5
-  @x_position ||= WIDTH - 1250
-  @x_position += @animal.x_speed #@x_speed
+  @time = TIME
 
-  @y_speed ||= 0
-  @y_speed += GRAVITY / 60
-  @y_position ||= HEIGHT - 90
-  @y_position += @y_speed
+  @game_over = false
 
-  @points ||= 0
+  @size = H_CIRCLE
 
-  @time ||= 5
+  i = 0
 
-  @game_over ||= false
-  
-  @flip ||= false
+  while i < SNAKES + 1
+    animal = {}
+    animal[:x_speed] = 5 + Random.rand(8)
+    animal[:y_speed] = 0
+    animal[:x_position] = WIDTH - 1250 + Random.rand(530)
+    animal[:y_position] = HEIGHT - 90 - Random.rand(320)
+    animal[:flip] = false
+    if i == 0
+      animal[:start_x] = 0
+      animal[:enemy] = false
+    else
+      animal[:start_x] = 3
+      animal[:enemy] = true
+    end
+    @animals << animal
+    i += 1
+  end
+end
 
-  if @x_position.negative?
-    @x_position = 0
+def draw_animal(i)
+
+  @animals[i].y_speed += GRAVITY / 60
+  @animals[i].x_position += @animals[i].x_speed #@x_speed
+  @animals[i].y_position += @animals[i].y_speed
+
+  if @animals[i].x_position.negative?
+    @animals[i].x_position = 0
     # @x_speed = -@x_speed * BOUNCINESS
-    @animal.x_speed = -@animal.x_speed * BOUNCINESS
+    @animals[i].x_speed = -@animals[i].x_speed * BOUNCINESS
   end
 
-  if @x_position > WIDTH - H_CIRCLE
-    @x_position = WIDTH - H_CIRCLE
+  if @animals[i].x_position > WIDTH - H_CIRCLE
+    @animals[i].x_position = WIDTH - H_CIRCLE
     # @x_speed = -@x_speed * BOUNCINESS
-    @animal.x_speed = -@animal.x_speed * BOUNCINESS
+    @animals[i].x_speed = -@animals[i].x_speed * BOUNCINESS
   end
 
-  if @y_position.negative?
-    @y_position = 0
-    @y_speed = -@y_speed * BOUNCINESS
+  if @animals[i].y_position.negative?
+    @animals[i].y_position = 0
+    @animals[i].y_speed = -@animals[i].y_speed * BOUNCINESS
   end
-  
-  if @animal.x_speed.negative? # @x_speed.negative?
-    @flip = true
+
+  if @animals[i].x_speed.negative? # @x_speed.negative?
+    @animals[i].flip = true
   else
-    @flip = false
+    @animals[i].flip = false
   end
-  
-  @size ||= H_CIRCLE
 
   mouse_x = @args.inputs.mouse.x
   mouse_y = @args.inputs.mouse.y
 
-  inside = inside_sprite(mouse_x, mouse_y, @size, @x_position, @y_position)
+  inside = inside_sprite(mouse_x, mouse_y, @size, @animals[i].x_position, @animals[i].y_position)
 
   if @args.inputs.mouse.click && inside && !@game_over
     @size /= 1.1
-    @points += 1
+    if @animals[i].enemy == false
+      @points += 1
+    else
+      @points -= 1
+    end
   end
 
   @args.outputs.sprites << {
-    x: @x_position,
-    y: @y_position,
+    x: @animals[i].x_position,
+    y: @animals[i].y_position,
     w: @size,
     h: @size,
     path: '/sprites/animations.png',
-    source_x:  ((@args.state.tick_count / 10).to_i % 3)* 16,
+    source_x: ((@args.state.tick_count / 10).to_i % 3) * 16 + @animals[i].start_x * 16,
     source_y:  0,
     source_w: 16,
     source_h: 16,
-    flip_horizontally: @flip
+    flip_horizontally: @animals[i].flip
   }
+end
 
-  @args.outputs.sprites << {
-    x: @x_position,
-    y: @y_position,
-    w: @size,
-    h: @size,
-    path: '/sprites/animations.png',
-    source_x:  ((@args.state.tick_count / 10).to_i % 3) * 16 + 16 * 3,
-    source_y:  0,
-    source_w: 16,
-    source_h: 16,
-    flip_horizontally: @flip
-  }
+def game
+  @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/background.png']
+
+  i = 0
+
+  while i < SNAKES + 1
+    draw_animal(i)
+    i += 1
+  end
 
   @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/front.png']
 
@@ -192,5 +208,6 @@ def game
   if @game_over
     @args.outputs.sprites << [0, 0, WIDTH, HEIGHT, '/sprites/blank.png', 0, 127]
     @args.outputs.labels << [WIDTH / 2, 450, "YOU GOT #{@points} POINTS!", 60, 1, 0, 0, 150, 255, FONT]
+    @state = State::INTRO if @args.inputs.keyboard.key_down.space
   end
 end
