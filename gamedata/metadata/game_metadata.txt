@@ -2,11 +2,11 @@ devid=wauwaugirly
 devtitle=WauWauGirly
 gameid=raccoonclicker
 gametitle=Raccoon Clicker
-version=0.1
+version=0.2
 icon=metadata/icon.png
 
 # Uncomment the entry below to bytecode compile your Ruby code (Pro License Only)
-compile_ruby=false
+compile_ruby=true
 
 # Uncomment the entry below to specify the package name for your APK (Pro License Only)
 #packageid=org.dev.gamename
