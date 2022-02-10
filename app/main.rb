@@ -10,6 +10,7 @@ RACCOON_SIZE = 10
 RACCOON_WIDTH = 19
 RACCOON_HEIGHT = 16
 FONT = '/fonts/shpinscher.ttf'
+SNAKES = 10
 
 class State
   INTRO = 0
@@ -90,9 +91,12 @@ end
 def game
   @args.outputs.sprites << [0, 0, 1280, 720, '/sprites/background.png']
 
+  @animal ||= {}
+  @animal[:x_speed] ||= 5
+
   @x_speed ||= 5
   @x_position ||= WIDTH - 1250
-  @x_position += @x_speed
+  @x_position += @animal.x_speed #@x_speed
 
   @y_speed ||= 0
   @y_speed += GRAVITY / 60
@@ -109,12 +113,14 @@ def game
 
   if @x_position.negative?
     @x_position = 0
-    @x_speed = -@x_speed * BOUNCINESS
+    # @x_speed = -@x_speed * BOUNCINESS
+    @animal.x_speed = -@animal.x_speed * BOUNCINESS
   end
 
   if @x_position > WIDTH - H_CIRCLE
     @x_position = WIDTH - H_CIRCLE
-    @x_speed = -@x_speed * BOUNCINESS
+    # @x_speed = -@x_speed * BOUNCINESS
+    @animal.x_speed = -@animal.x_speed * BOUNCINESS
   end
 
   if @y_position.negative?
@@ -122,7 +128,7 @@ def game
     @y_speed = -@y_speed * BOUNCINESS
   end
   
-  if @x_speed.negative?
+  if @animal.x_speed.negative? # @x_speed.negative?
     @flip = true
   else
     @flip = false
@@ -145,7 +151,24 @@ def game
     y: @y_position,
     w: @size,
     h: @size,
-    path: '/sprites/raccoon.png',
+    path: '/sprites/animations.png',
+    source_x:  ((@args.state.tick_count / 10).to_i % 3)* 16,
+    source_y:  0,
+    source_w: 16,
+    source_h: 16,
+    flip_horizontally: @flip
+  }
+
+  @args.outputs.sprites << {
+    x: @x_position,
+    y: @y_position,
+    w: @size,
+    h: @size,
+    path: '/sprites/animations.png',
+    source_x:  ((@args.state.tick_count / 10).to_i % 3) * 16 + 16 * 3,
+    source_y:  0,
+    source_w: 16,
+    source_h: 16,
     flip_horizontally: @flip
   }
 
